@@ -1,0 +1,64 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: delhi_metro_db
+    environment:
+      POSTGRES_USER: metro_admin
+      POSTGRES_PASSWORD: metro_secure_pass
+      POSTGRES_DB: delhi_metro_system
+    ports:
+      - "5432:5432"
+    volumes:
+      # Mount the initialization script
+      - ./database/init:/docker-entrypoint-initdb.d
+      # Persist database data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metro_admin -d delhi_metro_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - metro_network
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: delhi_metro_backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: delhi_metro_system
+      DB_USER: metro_admin
+      DB_PASSWORD: metro_secure_pass
+      JWT_SECRET: your_super_secure_jwt_secret_key_change_this_in_production
+      JWT_EXPIRE: 7d
+      CORS_ORIGIN: "*"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - metro_network
+
+networks:
+  metro_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

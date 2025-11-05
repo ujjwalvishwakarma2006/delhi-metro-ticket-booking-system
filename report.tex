@@ -1,0 +1,779 @@
+\documentclass{micro-econ-thesis}
+
+% ----------------------------------------------------------------------------
+% PACKAGES
+% ----------------------------------------------------------------------------
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{appendix}
+\usepackage{graphicx}
+\usepackage{pdfpages}
+\usepackage{setspace}
+\usepackage{xcolor, colortbl} % colors and table coloring
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+
+% ----------------------------------------------------------------------------
+% COLORS
+% ----------------------------------------------------------------------------
+\definecolor{tableheader}{HTML}{EED799} % light gray header background
+\definecolor{rowcolor}{HTML}{F9F9F9}     % alternate row color
+
+% ----------------------------------------------------------------------------
+% BIBLIOGRAPHY
+% ----------------------------------------------------------------------------
+\usepackage[giveninits=true, uniquename=init, authordate]{biblatex-chicago}
+\addbibresource{bibliography.bib}
+
+% ----------------------------------------------------------------------------
+% HEADER
+% ----------------------------------------------------------------------------
+\fancyhf{}
+\fancyhead[R]{\small\thepage}
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+
+% ----------------------------------------------------------------------------
+% TEAM MEMBERS (custom macro for title page)
+% ----------------------------------------------------------------------------
+\thesisMembers{%
+Amaan Parashar : 2023UCS0081\\
+Nikhat Singla : 2023UCS0103\\
+Patel Pritkumar Nareshbhai : 2023UCS0106\\
+Ujjwal Vishwakarma : 2023UCS0116\\
+Yashan Garg : 2023UCS0120
+}
+
+\begin{document}
+% ----------------------------------------------------------------------------
+% Details for the titlepage
+% ----------------------------------------------------------------------------
+\thesisTitle{Ticket Booking System for Delhi Metro Service}
+\thesisType{End-Term Project}
+\thesisAuthor{Group 4}
+\thesisDate{\today}
+
+% Print titlepage
+\thesisMakeTitleEN
+
+% ----------------------------------------------------------------------------
+% Table of contents
+% ----------------------------------------------------------------------------
+\cleardoublepage
+
+\tableofcontents
+
+% ----------------------------------------------------------------------------
+% List of figures/tables
+% ----------------------------------------------------------------------------
+
+\cleardoublepage
+
+% --------------------------
+
+% ----------------------------------------------------------------------------
+% Contents
+% ----------------------------------------------------------------------------
+\cleardoublepage
+\pagestyle{fancy}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+% Contents
+\onehalfspacing % for linespacing 1.5, you can turn it off with \singlespacing, e.g. for quotes or tables with multiline cells
+
+
+\section{Introduction}
+\label{sec:first}
+
+The goal is to design a comprehensive database schema for a modern metro ticket booking system. This system must manage the entire lifecycle of a passenger's interaction, from registering an account to completing a journey.
+
+The core problem is to model and store data related to several key functions:
+
+\textbf{1. User Management:} Securely handling passenger accounts, credentials, and personal details.
+
+\textbf{2. Payment \& Transactions:} Reliably processing various financial activities, including ticket purchases and smart card recharges.
+
+\textbf{3. Smart Card Operations:} Managing the balance, status, and recharge history of physical or digital metro cards.
+
+\textbf{4. Ticketing:} Generating unique, valid tickets (e.g., QR codes) for travel based on a booking.
+
+\textbf{5. Journey Validation:} Tracking the passenger's actual travel by recording entry (tap-in) and exit (tap-out) events at station gates.
+
+\textbf{6. Network \& Fares:} Defining the physical metro network (stations, lines) and the travel fares between metro stations.
+
+The database must ensure data integrity (e.g., a ticket cannot be used for two journeys), support specialization (e.g., a 'booking' is a specific type of 'transaction'), and model the real-world relationships between these concepts.
+
+\newpage
+
+\section{Ideation}
+\label{sec:second}
+To address the problem statement, the system was decomposed into the following fundamental entities, each representing a distinct real-world or logical concept:
+
+\begin{itemize}
+    \item \textbf{User:} The passenger or customer.
+    \item \textbf{SmartCard:} The reusable rechargable card for metro travels.
+    \item \textbf{Station, Line, StationLine:} The physical metro network.
+    \item \textbf{Transaction:} The central record for any financial event (the "base" entity).
+    \item \textbf{Booking \& Recharge:} Specialized types of transactions.
+    \item \textbf{Payment:} The record of how a transaction was settled.
+    \item \textbf{Ticket:} The single-use authorization for travel.
+    \item \textbf{Journey:} The actual trip taken using a ticket.
+    \item \textbf{Fare:} The store of fare price between any two metro stations.
+\end{itemize}
+
+\textbf{Key Design Justifications :-}
+
+\vspace{5pt}                           
+During the modeling process, several key decisions were made to ensure the system is flexible, scalable, and adheres to good database design principles.
+\vspace{5pt} 
+
+\textbf{1. Why have both SmartCard and Ticket?}\newline
+This separation is crucial for flexibility and reflects two different real-world concepts:
+\begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+    \item SmartCard is a Payment Method (a Stored-Value Rechargable Wallet):
+    \begin{itemize}
+        \item Its primary role is to store monetary value.
+        \item It has a Balance that users can Recharge.
+        \item It is reusable and persistent. A user owns a card and tops it up over time.
+        \item In this system, it acts as an internal wallet, which can be used to pay for a booking.
+    \end{itemize}
+
+    \item Ticket is a Travel Authorization (a Proof of Purchase):
+    \begin{itemize}
+        \item Its primary role is to grant access for a single, specific journey.
+        \item It is generated as the result of a Booking.
+        \item It is ephemeral and single-use. It contains the QRCode Data, is valid for a specific time, and is consumed by a Journey.
+    \end{itemize}
+
+    \item Why separate them?
+    \begin{itemize}
+        \item A Tourist/Infrequent User can pay for a Booking directly with a credit card. They never need a SmartCard.
+        \item A regular commuter maintains a SmartCard with a minimum Rs. 50 Balance and use the app to make a Booking.
+        \item It would be impossible to support users who just want to buy a single ticket without registering for a smart card.
+    \end{itemize}
+    
+\end{enumerate}
+
+\textbf{2. Why separate Transaction, Payment, Booking, and Recharge?}\newline
+This is a classic example of specialization and separation of concerns, which makes the system much cleaner.
+
+\begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+    \item Transaction is the "Base" Entity:
+    \begin{itemize}
+        \item It acts as the central journal for all financial events.
+        \item It stores the common data for any event: UserID, Amount, Status, and Timestamp.
+        \item It is for internal use in the organization
+    \end{itemize}
+
+
+    \item Booking and Recharge are "Specialized" Entities:
+    \begin{itemize}
+        \item A Booking is a transaction with a purpose of traveling from a Source to a Destination.
+        \item A Recharge is a transaction with a purpose of adding value to a CardID.
+    \end{itemize}
+
+
+    \item Payment is the "Settlement" Entity:
+    \begin{itemize}
+        \item A Transaction record is created (e.g., status "Pending") before the payment is even attempted.
+        \item The Payment entity stores the operational details and the payment's specific status.
+        \item Payment need not be initiated for every transaction (e.g. Rs. 0 transactions)
+        \itme It is external to the organization(e.g. UPI gateway)
+    \end{itemize}
+
+    \item Why separate Transaction and Payment?
+    \begin{itemize}
+        \item Transaction is for internal use while Payment is external
+        \item This separates the intent from the execution.
+        \item The Transaction is the intent whereas Payment is the execution.
+        \item This allows the system to log a failed payment attempt in the Payment table without invalidating the Transaction record, which could then be retried.
+    \end{itemize}
+
+\end{enumerate}
+\newpage    
+\section{Entity-Relation Model}
+\label{sec:third}
+
+\subsection{ER Diagram}
+\label{subsec:another}
+Below is the Entity-Relationship Diagram (ERD) illustrating the structure and relationships between the core data entities in the metro ticket booking system database, including support for both pre-booked tickets and smart card 'tap-and-go' journeys.
+
+\includegraphics[scale= 0.3]{erf2.png}
+
+\subsection{Entities}
+\label{subsec:Explanation}
+
+\begin{enumerate}
+    \item User
+    \begin{itemize}
+        \item Represents the system's passenger.
+        \item UserID (PK): A unique identifier for each user.
+        \item Name, Email, Phone: Personal and contact information.
+        \item PasswordHash: Securely stores the user's password instead of plaintext.
+        \item CreatedAt, UpdatedAt: Stores when the user first registered and last profile update respectively.
+    \end{itemize}
+
+    \item SmartCard
+    \begin{itemize}
+        \item Represents a metro card linked to a user or used anonymously.
+        \item CardID (PK): Unique identifier for the card.
+        \item UserID (FK): Links the card to a registered User. 
+        \item Balance: The current monetary value stored on the card.
+    \end{itemize}
+
+    \item Station
+    \begin{itemize}
+        \item Represents a physical metro station.
+        \item StationID (PK): Unique identifier for the station.
+        \item StationName, StationCode (unique): Human-readable names and unique short-codes (e.g., "CEN").
+    \end{itemize}
+
+    \item Line
+    \begin{itemize}
+        \item Represents a single metro line or route.
+        \item LineID (PK): Unique identifier for the line.
+        \item LineColor: Associated color.
+    \end{itemize}
+
+    \item Transaction
+    \begin{itemize}
+        \item A central "base" entity for all financial activities.
+        \item TransactionID (PK): A unique identifier for every transaction.
+        \item UserID (FK): Links to the User who initiated the transaction.
+        \item Amount: The monetary value of the transaction.
+        \item TransactionType: Differentiates the kind of transaction (e.g., "Booking", "Recharge"). This supports the inheritance model.
+        \item Status: Success or Failure
+    \end{itemize}
+
+    \item Booking
+    \begin{itemize}
+        \item A specific type of Transaction for purchasing a ticket.
+        \item BookingID (PK): Unique identifier for the booking.
+        \item TransactionID (FK, unique): A one-to-one link to the parent Transaction record.
+        \item SourceStationID (FK), DestinationStationID (FK): Links to the Station table for the start and end of the trip.
+        \item TotalFare: The calculated cost for this specific booking.
+    \end{itemize}
+
+    \item Recharge
+    \begin{itemize}
+        \item A specific type of Transaction for adding money to a card.
+        \item RechargeID (PK): Unique identifier for the recharge event.
+        \item TransactionID (FK, unique): A one-to-one link to the parent Transaction record.
+        \item CardID (FK): Links to the SmartCard that is being topped up.
+    \end{itemize}
+
+    \item Payment
+    \begin{itemize}
+        \item Stores the method and status of a Transaction.
+        \item PaymentID (PK): Unique identifier for the payment record.
+        \item TransactionID (FK, unique): A one-to-one link to the Transaction it paid for.
+        \item PaymentMethod: How the payment was made (e.g., "CreditCard", "Wallet", "SmartCardBalance").
+        \item Status: Success or Failure
+    \end{itemize}
+
+    \item Ticket
+    \begin{itemize}
+        \item The digital artifact generated by a Booking.
+        \item TicketID (PK): Unique identifier for the ticket.
+        \item BookingID (FK, unique): A one-to-one link to the Booking that generated this ticket.
+        \item QRCodeData (unique): The unique data string for the QR code to be scanned at the gate.
+        \item ValidFrom, ValidUntil: The time window during which the ticket can be used.
+    \end{itemize}
+
+    \item Journey
+    \begin{itemize}
+        \item Tracks the actual usage of a Ticket in the metro network.
+        \item JourneyID (PK): Unique identifier for the journey.
+        \item TicketID (FK, unique): A one-to-one link to the Ticket used for this journey.
+        \item EntryStationID (FK), EntryTime: Records which Station the passenger entered and when.
+        \item ExitStationID (FK), ExitTime: Records which Station the passenger exited and when. These are nullable because a journey may be in progress.
+    \end{itemize}
+
+    \item Fare
+    \begin{itemize}
+        \item Dictates the exact cost of travel between any two points in the network.
+        \item FareID (PK): The unique identifier for each specific fare rule or record.
+        \item SourceStationID (FK): Identifies the starting station for which this fare is valid.
+        \item DestinationStationID (FK): Identifies the ending station for which this fare is valid.
+        \item FareAmount: The precise monetary cost of the journey between the designated source and destination stations.
+    \end{itemize}
+
+    \item TJourney
+    \begin{itemize}
+        \item TJourney is a weak entity set, indicated by a double-lined rectangle.
+        \item Its owner entity is Journey. The relationship TJourney\_Journey is its identifying relationship
+        \item The relationship Ticket\_TJourney indicates the foreign key constraints with Journey entity set
+    \end{itemize}
+
+    \item SCJourney
+    \begin{itemize}
+        \item SCJourney is a weak entity set, indicated by a double-lined rectangle.
+        \item Its owner entity is Journey. The relationship SCJourney\_Journey is its identifying relationship
+        \item The relationship Card\_SCJourney indicates the foreign key constraints with SmartCard  entity set
+    \end{itemize}
+
+\end{enumerate}
+
+\subsection{Relationships}
+\label{subsec:Explanation}
+
+\begin{enumerate}
+
+    \item PaymentTransaction
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Payment and Transaction
+        \item Relationship Type : One-to-One
+        \item Participation Constraints : Total participation for Transaction; Partial participation for Payment
+        \item Each Transaction must involve one Payment, and each Payment is associated with at most one Transaction
+    \end{enumerate}
+    \item UserTransaction
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : User and Transaction
+        \item Relationship Type : One-to-Many
+        \item Participation Constraints : Partial participation for User; Partial participation for Transaction
+        \item A User can have many Transactions (or none), and a Transaction is performed by one and only one User
+    \end{enumerate}
+
+    \item RechargeTransaction
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Transaction and Recharge
+        \item Relationship Type : One-to-One
+        \item Participation Constraints : Total participation for Recharge; Partial participation for SmartCard
+        \item A SmartCard can be linked to many Recharges (or none), and every Recharge must be for exactly one SmartCard
+    \end{enumerate}
+
+    \item CardRecharge
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : User and SmartCard
+        \item Relationship Type : One-to-Many
+        \item Participation Constraints : Total participation for SmartCard; Partial participation for User
+        \item A User can possess multiple SmartCards (or none), and every SmartCard is owned by one and only one User
+    \end{enumerate}
+
+    \item User\_Card
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : User and SmartCard
+        \item Relationship Type : One-to-Many
+        \item Participation Constraints : Total participation for SmartCard; Partial participation for User
+        \item A User can possess multiple SmartCards (or none), and every SmartCard is owned by one and only one User
+    \end{enumerate}
+
+    \item BookingTransaction
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Transaction and Booking
+        \item Relationship Type : One-to-One
+        \item Participation Constraints : Partial participation for Transaction; Total participation for Booking
+        \item Each Booking must be a Transaction, and a Transaction can be a Booking or something else
+    \end{enumerate}
+
+    \item TicketBooking
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Booking and Ticket
+        \item Relationship Type : One-to-One
+        \item Participation Constraints : Total participation for Ticket; Total participation for Booking
+        \item A Booking corresponds to exactly one Ticket, and every Ticket is created via one Booking
+    \end{enumerate}
+
+    \item Ticket\_TJourney 
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Ticket and TJourney
+        \item Relationship Type : One-to-One
+        \item Participation Constraints : Total participation for TJourney; Partial participation for Ticket
+        \item A Ticket can be used for one TJourneys, and a TJourney can involve a single ticket
+    \end{enumerate}
+
+    \item TJourney\_Journey (Weak)
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : TJourney and Journey
+        \item Relationship Type : One-to-One
+        \item Participation Constraints : Total participation for TJourney; Partial participation for Journey
+        \item Each TJourney is associated with a Journey, but a Journey may not be associated with TJourney
+    \end{enumerate}
+
+    \item SCJourney\_Journey (Weak)
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Journey and SCJourney
+        \item Relationship Type : One-to-One
+        \item Participation Constraints : Total participation for SCJourney; Partial participation for Journey
+        \item Each SCJourney is associated with a Journey, but a Journey may not be associated with SCJourney
+
+    \end{enumerate}
+
+    \item EntryStation
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Station and Journey
+        \item Relationship Type : One-to-Many
+        \item Participation Constraints : Total participation for Journey; Partial participation for Station
+        \item A Station can be the entry point for many Journeys (or none), and every Journey must have exactly one entry Station
+    \end{enumerate}
+
+    \item ExitStation
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Station and Journey
+        \item Relationship Type : One-to-Many
+        \item Participation Constraints : Partial participation for Journey; Partial participation for Station
+        \item A Station can be the exit point for many Journeys (or none), and a Journey may have an exit Station (e.g., if the journey is complete)
+    \end{enumerate}
+
+    \item StationLine
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Station and MetroLine
+        \item Relationship Type : Many-to-Many
+        \item Participation Constraints : Total participation for Station; Total participation for MetroLine
+        \item Station can belong to multiple MetroLines, and a MetroLine consists of multiple Stations
+    \end{enumerate}
+
+    \item Card\_SCJourney
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : SmartCard and SCJourney
+        \item Relationship Type : One-to-Many
+        \item Participation Constraints : Total participation for SCJourney; Partial participation for SmartCard
+        \item A SmartCard can be linked to many SCJourneys, and every SCJourney involves one SmartCard
+    \end{enumerate}
+
+    \item To
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Station and Fare
+        \item Relationship Type : One-to-Many
+        \item Participation Constraints : Total participation for Fare, Partial participation for Station
+        \item A Station can be the destination for many Fare records, and every Fare is defined for one destination Station
+    \end{enumerate}
+
+    \item From
+    \begin{enumerate}
+    \renewcommand{\labelenumi}{\roman{enumi}.}
+        \item Entities Involved : Station and Fare
+        \item Relationship Type : One-to-Many
+        \item Participation Constraints : Total participation for Fare : Partial participation for Station
+        \item A Station can be the origin for many Fare records, and every Fare is defined from one origin Station
+    \end{enumerate}
+\end{enumerate}
+
+
+\newpage
+\section{Schema}
+\label{sec:schema}
+
+The following tables define the schema for the Delhi Metro Ticket Booking System.
+\setcounter{table}{0}
+
+% -------------------------
+% USER TABLE
+% -------------------------
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+UserID & INT (PK) & Unique identifier for each user \\ \hline
+Name & VARCHAR(100) & Full name of the user \\ \hline
+Email & VARCHAR(100) & Email address (unique) \\ \hline
+Phone & VARCHAR(15) & Contact number \\ \hline
+PasswordHash & VARCHAR(255) & Encrypted password \\ \hline
+\end{tabular}
+\caption{User}
+\end{table}
+
+% -------------------------
+% SMARTCARD TABLE
+% -------------------------
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+\rowcolor{rowcolor}
+CardID & INT (PK) & Unique identifier for each card \\ \hline
+\rowcolor{rowcolor}
+UserID & INT (FK) & Linked user ID (nullable) \\ \hline
+\rowcolor{rowcolor}
+Balance & DECIMAL(10,2) & Current stored balance \\ \hline
+\end{tabular}
+\caption{SmartCard}
+\end{table}
+
+% -------------------------
+% STATION TABLE
+% -------------------------
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+\rowcolor{rowcolor}
+StationID & INT (PK) & Unique identifier for each metro station \\ \hline
+\rowcolor{rowcolor}
+StationName & VARCHAR(100) & Human-readable name of the station \\ \hline
+\rowcolor{rowcolor}
+StationCode & VARCHAR(10) & Unique short code (e.g., "CEN") \\ \hline
+\end{tabular}
+\caption{Station}
+\end{table}
+
+% -------------------------
+% LINE TABLE
+% -------------------------
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+\rowcolor{rowcolor}
+LineID & INT (PK) & Unique identifier for each metro line \\ \hline
+\rowcolor{rowcolor}
+LineName & VARCHAR(100) & Human-readable name (e.g., "Blue Line") \\ \hline
+\rowcolor{rowcolor}
+LineColor & VARCHAR(30) & Color representing the line (e.g., "Blue") \\ \hline
+\end{tabular}
+\caption{Line}
+\end{table}
+
+% -------------------------
+% TRANSACTION TABLE
+% -------------------------
+\rowcolors{2}{rowcolor}{white}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+TransactionID & INT (PK) & Unique transaction identifier \\ \hline
+UserID & INT (FK) & User who initiated transaction \\ \hline
+Amount & DECIMAL(10,2) & Value of the transaction \\ \hline
+TransactionType & VARCHAR(20) & Booking / Recharge \\ \hline
+Timestamp & DATETIME & Time of transaction \\ \hline
+\end{tabular}
+\caption{Transaction}
+\end{table}
+
+
+% -------------------------
+% BOOKING TABLE
+% -------------------------
+\rowcolors{2}{rowcolor}{white}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+BookingID & INT (PK) & Unique booking identifier \\ \hline
+TransactionID & INT (FK, unique) & Parent transaction \\ \hline
+SourceStationID & INT (FK) & Starting station \\ \hline
+DestinationStationID & INT (FK) & Ending station \\ \hline
+TotalFare & DECIMAL(10,2) & Fare for this booking \\ \hline
+\end{tabular}
+\caption{Booking}
+\end{table}
+
+% -------------------------
+% RECHARGE TABLE
+% -------------------------
+\rowcolors{2}{rowcolor}{white}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+RechargeID & INT (PK) & Unique recharge ID \\ \hline
+TransactionID & INT (FK, unique) & Parent transaction \\ \hline
+CardID & INT (FK) & Card being recharged \\ \hline
+\end{tabular}
+\caption{Recharge}
+\end{table}
+
+% -------------------------
+% PAYMENT TABLE
+% -------------------------
+\rowcolors{2}{rowcolor}{white}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+PaymentID & INT (PK) & Unique payment ID \\ \hline
+TransactionID & INT (FK, unique) & Transaction being paid \\ \hline
+PaymentMethod & VARCHAR(50) & Method of payment \\ \hline
+Status & VARCHAR(20) & Payment status (Success/Failed) \\ \hline
+\end{tabular}
+\caption{Payment}
+\end{table}
+
+% -------------------------
+% TICKET TABLE
+% -------------------------
+\rowcolors{2}{rowcolor}{white}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+TicketID & INT (PK) & Unique ticket ID \\ \hline
+BookingID & INT (FK, unique) & Linked booking \\ \hline
+QRCodeData & VARCHAR(255) & Unique QR string \\ \hline
+ValidFrom & DATETIME & Start of validity \\ \hline
+ValidUntil & DATETIME & End of validity \\ \hline
+\end{tabular}
+\caption{Ticket}
+\end{table}
+
+% -------------------------
+% JOURNEY TABLE
+% -------------------------
+\rowcolors{2}{rowcolor}{white}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+JourneyID & INT (PK) & Unique journey ID \\ \hline
+JourneyType & ENUM & Ticket or Card used \\ \hline
+EntryStationID & INT (FK) & Entry station \\ \hline
+EntryTime & DATETIME & Time of entry \\ \hline
+ExitStationID & INT (FK) & Exit station (nullable) \\ \hline
+ExitTime & DATETIME & Time of exit (nullable) \\ \hline
+FareDeducted & INT & Actual amount (nullable) \\ \hline
+Status & ENUM & Journey status \\ \hline
+\end{tabular}
+\caption{Journey}
+\end{table}
+
+% -------------------------
+% FARE TABLE
+% -------------------------
+\rowcolors{2}{rowcolor}{white}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{tableheader}
+\textbf{Attribute} & \textbf{Type} & \textbf{Description} \\ \hline
+FareID & INT (PK) & Unique fare record \\ \hline
+SourceStationID & INT (FK) & Start station \\ \hline
+DestinationStationID & INT (FK) & End station \\ \hline
+FareAmount & DECIMAL(10,2) & Fare value \\ \hline
+\end{tabular}
+\caption{Fare}
+\end{table}
+
+\newpage
+
+\section{Normalisation}
+
+All tables satisfy 1NF because all attributes (like INT, VARCHAR, DECIMAL) are atomic, and there are no repeating groups or multi-valued attributes.
+
+\begin{enumerate}
+    \item User
+    \begin{itemize}
+        \item Primary Key (PK): UserID
+        \item Candidate Keys (CKs): UserID, Email (since it's unique)
+        \item 3NF: Yes. The table is in 2NF (PK is a single attribute). It has no transitive dependencies; non-key attributes like Name and Phone depend only on the primary key, not on another non-key attribute.
+    \end{itemize}
+
+    \item SmartCard
+    \begin{itemize}
+        \item Primary Key (PK): CardID
+        \item Candidate Keys (CKs):  CardID
+        \item 3NF: Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies; Balance and UserID depend only on the CardID.
+    \end{itemize}
+
+    \item Station
+    \begin{itemize}
+        \item Primary Key (PK): StationID
+        \item Candidate Keys (CKs):  StationID, StationCode (since it's unique)
+        \item 3NF:  Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies; StationName depends directly on the key, not on another non-key attribute.
+    \end{itemize}
+
+    \item Line
+    \begin{itemize}
+        \item Primary Key (PK): LineID
+        \item Candidate Keys (CKs):  LineID
+        \item 3NF: Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies; LineName and LineColor depend only on LineID.
+    \end{itemize}
+
+    \item Transaction
+    \begin{itemize}
+        \item Primary Key (PK): TransactionID
+        \item Candidate Keys (CKs):  TransactionID
+        \item 3NF: Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies; all other attributes (UserID, Amount, etc.) depend only on TransactionID.
+    \end{itemize}
+
+    \item Booking
+    \begin{itemize}
+        \item Primary Key (PK): BookingID
+        \item Candidate Keys (CKs):  BookingID, TransactionID (since it's unique)
+        \item 3NF: Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies. Attributes like TotalFare and SourceStationID depend directly on the key (BookingID or TransactionID), not on another non-key attribute.
+    \end{itemize}
+
+    \item Recharge
+    \begin{itemize}
+        \item Primary Key (PK): RechargeID
+        \item Candidate Keys (CKs):  RechargeID, TransactionID (since it's unique)
+        \item 3NF: Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies; CardID depends directly on the key.
+    \end{itemize}
+
+    \item Payment
+    \begin{itemize}
+        \item Primary Key (PK): PaymentID
+        \item Candidate Keys (CKs):  PaymentID, TransactionID (since it's unique)
+        \item 3NF: Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies; PaymentMethod and Status depend only on the key.
+    \end{itemize}
+
+    \item Ticket
+    \begin{itemize}
+        \item Primary Key (PK): TicketID
+        \item Candidate Keys (CKs):  TicketID, BookingID (unique), QRCodeData (unique)
+        \item 3NF: Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies; all other attributes depend directly on one of the candidate keys.
+    \end{itemize}
+
+    \item Journey
+    \begin{itemize}
+        \item Primary Key (PK): JourneyID
+        \item Candidate Keys (CKs):  JourneyID
+        \item 3NF: Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies; all other attributes, like EntryStationID, EntryTime, ExitStationID, etc., depend only on the JourneyID.
+    \end{itemize}
+
+    \item Fare
+    \begin{itemize}
+        \item Primary Key (PK): FareID
+        \item Candidate Keys (CKs):  FareID, and the composite key (SourceStationID, DestinationStationID) (assuming a single fare per route).
+        \item 3NF: Yes. It's in 2NF (single-attribute PK). It has no transitive dependencies. The dependency (SourceStationID, DestinationStationID) -> FareAmount is valid because the determinant is a candidate key.
+    \end{itemize}
+\end{enumerate}
+% ----------------------------------------------------------------------------
+% END DOCUMENT
+% ----------------------------------------------------------------------------
+\end{document}

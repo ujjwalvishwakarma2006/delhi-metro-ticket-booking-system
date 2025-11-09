@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, IndianRupee, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
 import { stationService } from '../services/stationService';
 import { ticketService } from '../services/ticketService';
+import QRCodeDisplay from '../components/QRCodeDisplay';
 import type { Station } from '../services/stationService';
 
 const BookTicket: React.FC = () => {
@@ -107,9 +108,15 @@ const BookTicket: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-blue-800 font-mono break-all">
-                QR Data: {ticketData.qrCodeData}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 mb-6">
+              <p className="text-center text-sm font-semibold text-gray-700 mb-4">
+                Show this QR code at entry gate
+              </p>
+              <div className="flex justify-center">
+                <QRCodeDisplay data={ticketData.qrCodeData} size={250} />
+              </div>
+              <p className="text-center text-xs text-gray-500 mt-4">
+                Ticket ID: {ticketData.ticketId}
               </p>
             </div>
 

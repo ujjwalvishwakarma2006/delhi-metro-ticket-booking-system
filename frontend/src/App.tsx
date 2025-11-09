@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
@@ -8,6 +9,9 @@ import BookTicket from './pages/BookTicket';
 import SmartCard from './pages/SmartCard';
 import History from './pages/History';
 import LiveLogs from './pages/LiveLogs';
+import EntryScanner from './pages/EntryScanner';
+import ExitScanner from './pages/ExitScanner';
+import ScannerLanding from './pages/ScannerLanding';
 import './App.css';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -67,7 +71,9 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <PrivateRoute>
-            <Dashboard />
+            <ErrorBoundary>
+              <Dashboard />
+            </ErrorBoundary>
           </PrivateRoute>
         }
       />
@@ -75,7 +81,9 @@ function AppRoutes() {
         path="/book-ticket"
         element={
           <PrivateRoute>
-            <BookTicket />
+            <ErrorBoundary>
+              <BookTicket />
+            </ErrorBoundary>
           </PrivateRoute>
         }
       />
@@ -83,7 +91,9 @@ function AppRoutes() {
         path="/smart-card"
         element={
           <PrivateRoute>
-            <SmartCard />
+            <ErrorBoundary>
+              <SmartCard />
+            </ErrorBoundary>
           </PrivateRoute>
         }
       />
@@ -91,7 +101,9 @@ function AppRoutes() {
         path="/history"
         element={
           <PrivateRoute>
-            <History />
+            <ErrorBoundary>
+              <History />
+            </ErrorBoundary>
           </PrivateRoute>
         }
       />
@@ -99,12 +111,38 @@ function AppRoutes() {
         path="/live-logs"
         element={
           <PrivateRoute>
-            <LiveLogs />
+            <ErrorBoundary>
+              <LiveLogs />
+            </ErrorBoundary>
           </PrivateRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" />} />
-      <Route path="*" element={<Navigate to="/dashboard" />} />
+      <Route
+        path="/scanner/entry"
+        element={
+          <ErrorBoundary>
+            <EntryScanner />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/scanner/exit"
+        element={
+          <ErrorBoundary>
+            <ExitScanner />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/scanners"
+        element={
+          <ErrorBoundary>
+            <ScannerLanding />
+          </ErrorBoundary>
+        }
+      />
+      <Route path="/" element={<ScannerLanding />} />
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }

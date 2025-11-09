@@ -17,9 +17,22 @@ const History: React.FC = () => {
   const fetchHistory = async () => {
     try {
       const response = await ticketService.getHistory();
-      setHistory(response.data.history);
-    } catch (err) {
-      setError('Failed to load history');
+      const rawHistory = response.data.history || [];
+      
+      // Transform backend response to match frontend expectations
+      const transformedHistory = rawHistory.map((item: any) => ({
+        type: item.type,
+        from: item.fromStation || item.from || 'Unknown',
+        to: item.toStation || item.to || 'Unknown',
+        fare: item.fare,
+        date: item.date,
+        status: item.journeyStatus || item.status,
+      }));
+      
+      setHistory(transformedHistory);
+    } catch (err: any) {
+      console.error('Error fetching history:', err);
+      setError(err.response?.data?.message || 'Failed to load history');
     } finally {
       setLoading(false);
     }
@@ -93,10 +106,10 @@ const History: React.FC = () => {
                     <div className="text-right">
                       <div className="flex items-center gap-1 text-gray-600 text-sm">
                         <Calendar className="w-4 h-4" />
-                        <span>{new Date(item.date).toLocaleDateString()}</span>
+                        <span>{item.date ? new Date(item.date).toLocaleDateString() : 'N/A'}</span>
                       </div>
                       <div className="text-xs text-gray-500">
-                        {new Date(item.date).toLocaleTimeString()}
+                        {item.date ? new Date(item.date).toLocaleTimeString() : 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -105,7 +118,7 @@ const History: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 text-gray-700">
                         <MapPin className="w-4 h-4 text-green-600" />
-                        <span className="font-semibold">{item.from}</span>
+                        <span className="font-semibold">{item.from || 'Unknown'}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-gray-400">
@@ -115,19 +128,19 @@ const History: React.FC = () => {
                     </div>
                     <div className="flex-1 text-right">
                       <div className="flex items-center gap-2 justify-end text-gray-700">
-                        <span className="font-semibold">{item.to}</span>
+                        <span className="font-semibold">{item.to || 'Unknown'}</span>
                         <MapPin className="w-4 h-4 text-red-600" />
                       </div>
                     </div>
                   </div>
 
-                  {item.fare && (
+                  {item.fare !== null && item.fare !== undefined && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Fare Paid</span>
                         <span className="font-semibold text-gray-900 flex items-center">
                           <IndianRupee className="w-4 h-4" />
-                          {item.fare.toFixed(2)}
+                          {Number(item.fare).toFixed(2)}
                         </span>
                       </div>
                     </div>

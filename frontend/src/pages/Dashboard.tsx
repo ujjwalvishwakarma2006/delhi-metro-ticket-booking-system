@@ -77,8 +77,8 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 mb-1">Smart Card Balance</p>
-                <h3 className="text-4xl font-bold">₹{user.smartCard.balance.toFixed(2)}</h3>
-                <p className="text-blue-100 mt-2 text-sm">Card ID: {user.smartCard.cardId}</p>
+                <h3 className="text-4xl font-bold">₹{(user.smartCard.balance ?? 0).toFixed(2)}</h3>
+                <p className="text-blue-100 mt-2 text-sm">Card ID: {user.smartCard.cardId || 'N/A'}</p>
               </div>
               <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                 <Wallet className="w-8 h-8" />

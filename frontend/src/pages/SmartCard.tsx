@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CreditCard, IndianRupee, RefreshCw, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, CreditCard, IndianRupee, RefreshCw, AlertCircle, CheckCircle, Clock, QrCode } from 'lucide-react';
 import { cardService } from '../services/cardService';
 import { useAuth } from '../context/AuthContext';
+import QRCodeDisplay from '../components/QRCodeDisplay';
 import type { CardBalance, RechargeHistory } from '../services/cardService';
 
 const SmartCard: React.FC = () => {
@@ -28,27 +29,40 @@ const SmartCard: React.FC = () => {
     setError('');
     
     try {
-      // Try to get card balance first (simpler endpoint)
-      const balanceResponse = await cardService.getBalance();
-      setCardDetails(balanceResponse.data);
-      
-      // Then try to get full details with recharge history
+      // Try to get full details with recharge history first
       try {
         const detailsResponse = await cardService.getCardDetails();
-        setCardDetails(detailsResponse.data.card);
-        setRechargeHistory(detailsResponse.data.recentRecharges);
-      } catch (detailsErr) {
-        // It's ok if detailed history fails, we have balance
-        console.log('Using balance info only, history unavailable');
+        if (detailsResponse?.data?.card) {
+          setCardDetails(detailsResponse.data.card);
+          // Transform recharge history to ensure all fields are properly typed
+          const transformedRecharges = (detailsResponse.data.recentRecharges || []).map((r: any) => ({
+            rechargeId: r.id || r.rechargeId,
+            amount: r.amount,
+            timestamp: r.date || r.timestamp,
+            paymentMethod: r.paymentMethod,
+          }));
+          setRechargeHistory(transformedRecharges);
+          return;
+        }
+      } catch (detailsErr: any) {
+        console.log('Detailed history unavailable, trying balance endpoint');
+      }
+      
+      // Fallback to balance endpoint
+      const balanceResponse = await cardService.getBalance();
+      if (balanceResponse?.data) {
+        setCardDetails(balanceResponse.data);
         setRechargeHistory([]);
       }
     } catch (err: any) {
       console.error('Error fetching card details:', err);
-      if (err.response?.status === 404) {
+      if (err.response?.status === 404 || err.message?.includes('404')) {
         // User doesn't have a card yet
         setCardDetails(null);
+        setError('');
       } else {
-        setError('Failed to load card details. Please try again.');
+        setCardDetails(null);
+        setError(err.response?.data?.message || 'Failed to load card details. Please try again.');
       }
     } finally {
       setPageLoading(false);
@@ -189,28 +203,45 @@ const SmartCard: React.FC = () => {
         ) : (
           // Card Details & Recharge Section
           <div className="space-y-6">
-            {/* Card Balance */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-6 text-white">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-blue-100 text-sm mb-1">Current Balance</p>
-                  <h2 className="text-4xl font-bold flex items-center">
-                    <IndianRupee className="w-8 h-8" />
-                    {cardDetails.balance.toFixed(2)}
-                  </h2>
+            {/* Card Balance and QR Code */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Balance Card */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-6 text-white">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-blue-100 text-sm mb-1">Current Balance</p>
+                    <h2 className="text-4xl font-bold flex items-center">
+                      <IndianRupee className="w-8 h-8" />
+                      {(cardDetails.balance ?? 0).toFixed(2)}
+                    </h2>
+                  </div>
+                  <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <CreditCard className="w-8 h-8" />
+                  </div>
                 </div>
-                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-8 h-8" />
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-blue-400">
+                  <div>
+                    <p className="text-blue-100 text-xs mb-1">Card ID</p>
+                    <p className="font-semibold">{cardDetails.cardId}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-100 text-xs mb-1">Status</p>
+                    <p className="font-semibold">{cardDetails.isActive ? 'Active' : 'Inactive'}</p>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-blue-400">
-                <div>
-                  <p className="text-blue-100 text-xs mb-1">Card ID</p>
-                  <p className="font-semibold">{cardDetails.cardId}</p>
+
+              {/* QR Code Card */}
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <QrCode className="w-5 h-5 text-gray-700" />
+                  <h3 className="text-lg font-bold text-gray-900">Card QR Code</h3>
                 </div>
-                <div>
-                  <p className="text-blue-100 text-xs mb-1">Status</p>
-                  <p className="font-semibold">{cardDetails.isActive ? 'Active' : 'Inactive'}</p>
+                <p className="text-sm text-gray-600 mb-4">
+                  Show this QR code at entry/exit gates
+                </p>
+                <div className="flex justify-center">
+                  <QRCodeDisplay data={`CARD-${cardDetails.cardId}`} size={180} />
                 </div>
               </div>
             </div>
@@ -290,11 +321,11 @@ const SmartCard: React.FC = () => {
                   {rechargeHistory.map((recharge) => (
                     <div key={recharge.rechargeId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div>
-                        <p className="font-semibold text-gray-900">₹{recharge.amount.toFixed(2)}</p>
-                        <p className="text-sm text-gray-600">{recharge.paymentMethod}</p>
+                        <p className="font-semibold text-gray-900">₹{Number(recharge.amount || 0).toFixed(2)}</p>
+                        <p className="text-sm text-gray-600">{recharge.paymentMethod || 'N/A'}</p>
                       </div>
                       <p className="text-sm text-gray-500">
-                        {new Date(recharge.timestamp).toLocaleString()}
+                        {recharge.timestamp ? new Date(recharge.timestamp).toLocaleString() : 'N/A'}
                       </p>
                     </div>
                   ))}

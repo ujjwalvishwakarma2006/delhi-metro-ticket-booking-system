@@ -32,7 +32,20 @@ const LiveLogs: React.FC = () => {
 
   const connectWebSocket = () => {
     const token = localStorage.getItem('token');
-    const wsUrl = `ws://localhost:3000/api/logs/subscribe?token=${token}`;
+    
+    if (!token) {
+      setError('Authentication token not found');
+      setConnected(false);
+      return;
+    }
+
+    // Auto-detect WebSocket URL based on where frontend is accessed from
+    const hostname = window.location.hostname;
+    const WS_BASE_URL = (hostname === 'localhost' || hostname === '127.0.0.1') 
+      ? 'ws://localhost:3000' 
+      : `ws://${hostname}:3000`;
+    
+    const wsUrl = `${WS_BASE_URL}/api/logs/subscribe?token=${token}`;
 
     try {
       const ws = new WebSocket(wsUrl);
@@ -46,7 +59,9 @@ const LiveLogs: React.FC = () => {
       ws.onmessage = (event) => {
         try {
           const logEvent = JSON.parse(event.data);
-          setLogs((prev) => [...prev, logEvent]);
+          if (logEvent && logEvent.event && logEvent.timestamp) {
+            setLogs((prev) => [...prev, logEvent]);
+          }
         } catch (err) {
           console.error('Failed to parse log event:', err);
         }
@@ -54,18 +69,20 @@ const LiveLogs: React.FC = () => {
 
       ws.onerror = (err) => {
         console.error('WebSocket error:', err);
-        setError('WebSocket connection error');
+        setError('WebSocket connection error. The service may be unavailable.');
         setConnected(false);
       };
 
       ws.onclose = () => {
         setConnected(false);
         console.log('WebSocket disconnected');
+        // Don't set error on normal close
       };
 
       wsRef.current = ws;
     } catch (err) {
-      setError('Failed to connect to WebSocket');
+      console.error('WebSocket initialization failed:', err);
+      setError('Failed to initialize WebSocket connection');
       setConnected(false);
     }
   };

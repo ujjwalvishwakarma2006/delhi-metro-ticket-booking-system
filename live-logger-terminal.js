@@ -122,7 +122,7 @@ function main() {
   }
   
   const token = args[0];
-  const wsUrl = `ws://localhost:3000/api/logs/subscribe?token=${token}`;
+  const wsUrl = `ws://127.0.0.1:3000/api/logs/subscribe?token=${token}`;
   
   console.log(`${colors.bright}🔌 Connecting to:${colors.reset} ${colors.dim}${wsUrl}${colors.reset}\n`);
   console.log(`${colors.yellow}⏳ Establishing connection...${colors.reset}\n`);

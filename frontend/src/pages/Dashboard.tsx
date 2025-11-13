@@ -34,13 +34,6 @@ const Dashboard: React.FC = () => {
       color: 'bg-purple-500',
       path: '/history',
     },
-    {
-      title: 'Live Activity',
-      description: 'Real-time system events',
-      icon: Activity,
-      color: 'bg-orange-500',
-      path: '/live-logs',
-    },
   ];
 
   return (

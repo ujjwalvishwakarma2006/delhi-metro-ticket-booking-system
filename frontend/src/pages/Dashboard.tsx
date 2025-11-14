@@ -1,11 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Ticket, CreditCard, History, User, Activity, LogOut, Wallet } from 'lucide-react';
+import { Ticket, CreditCard, History, User, LogOut, Wallet } from 'lucide-react';
+import { cardService } from '../services/cardService';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [balance, setBalance] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (user?.smartCard) {
+        try {
+          const balanceResponse = await cardService.getBalance();
+          setBalance(balanceResponse.data.balance);
+        } catch (error) {
+          console.error('Failed to fetch balance:', error);
+        }
+      }
+    };
+    fetchBalance();
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -70,7 +86,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 mb-1">Smart Card Balance</p>
-                <h3 className="text-4xl font-bold">₹{(user.smartCard.balance ?? 0).toFixed(2)}</h3>
+                <h3 className="text-4xl font-bold">₹{balance.toFixed(2)}</h3>
                 <p className="text-blue-100 mt-2 text-sm">Card ID: {user.smartCard.cardId || 'N/A'}</p>
               </div>
               <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delhi Metro Ticket Booking System — DBMS Project Report</title>
+  <meta name="description" content="Comprehensive DBMS project report for the Delhi Metro Ticket Booking System, including schema, triggers, stored procedures, API design, and deployment." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --surface: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --primary: #60a5fa;
+      --primary-2: #38bdf8;
+      --accent: #a78bfa;
+      --success: #34d399;
+      --warning: #f59e0b;
+      --danger: #f87171;
+      --border: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .hero { background: radial-gradient(1200px 600px at 20% -10%, rgba(56,189,248,0.15), transparent), radial-gradient(1200px 800px at 90% 10%, rgba(96,165,250,0.15), transparent); border-bottom: 1px solid var(--border); }
+    .hero-inner { padding: 48px 24px 24px; }
+    .title { font-size: 28px; font-weight: 800; letter-spacing: .2px; }
+    .subtitle { color: var(--muted); margin-top: 8px; max-width: 900px; }
+    .meta { margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 14px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(148,163,184,0.12); color: #cbd5e1; border: 1px solid var(--border); padding: 6px 10px; border-radius: 999px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 1000px) { .grid { grid-template-columns: 280px 1fr; align-items: start; } }
+    nav.toc { position: sticky; top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    nav.toc h3 { margin: 0 0 8px; font-size: 14px; color: var(--muted); font-weight: 600; }
+    nav.toc a { display: block; padding: 8px 10px; border-radius: 8px; color: #cbd5e1; font-size: 14px; }
+    nav.toc a:hover { background: #0b1220; text-decoration: none; }
+    section.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    section.card h2 { margin: 0 0 8px; font-size: 20px; }
+    section.card h3 { margin: 20px 0 8px; font-size: 16px; color: #cbd5e1; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: #0b1220; color: #cbd5e1; font-size: 13px; }
+    .list { margin: 8px 0 0; padding-left: 18px; color: #d1d5db; }
+    .muted { color: var(--muted); }
+    .codeblock { margin: 14px 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    pre { margin: 0; }
+    .kpis { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .kpi { background: #0b1220; border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+    .kpi .label { color: var(--muted); font-size: 12px; }
+    .kpi .value { font-size: 18px; font-weight: 700; margin-top: 4px; }
+    .callout { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25); padding: 12px 14px; border-radius: 10px; }
+    .callout.warn { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.25); }
+    .callout.good { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.25); }
+    .table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .table th, .table td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .table th { background: #0b1220; color: #cbd5e1; }
+    details { border: 1px solid var(--border); background: #0b1220; border-radius: 10px; padding: 10px 12px; margin: 10px 0; }
+    summary { cursor: pointer; color: #cbd5e1; font-weight: 600; }
+    .footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); padding: 16px 0; margin-top: 24px; }
+    .repo-links a { display: inline-block; margin-right: 10px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="container hero-inner">
+      <div class="title">Delhi Metro Ticket Booking System — DBMS Project</div>
+      <div class="subtitle">End-to-end metro ticketing platform showcasing relational schema design, stored procedures, triggers, materialized views, REST APIs, and a modern frontend. This page is a single-file report designed for GitHub Pages.</div>
+      <div class="meta">
+        <span class="badge" title="Course Project">🎓 DBMS Term Project</span>
+        <span class="badge" title="Last Updated">📅 November 2025</span>
+        <span class="badge" title="Database">🗄️ PostgreSQL 16+</span>
+        <span class="badge" title="Backend">⚙️ Node.js + Express</span>
+        <span class="badge" title="Frontend">🖥️ React + Vite</span>
+      </div>
+      <div class="meta" style="margin-top:12px">
+        <span class="muted">Team: Group 4 — Amaan Parashar (2023UCS0081), Nikhat Singla (2023UCS0103), Patel Pritkumar Nareshbhai (2023UCS0106), Ujjwal Vishwakarma (2023UCS0116), Yashan Garg (2023UCS0120)</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+      <nav class="toc">
+        <h3>On this page</h3>
+        <a href="#overview">Overview</a>
+        <a href="#schema">Database Schema</a>
+        <a href="#procedures">Procedures & Triggers</a>
+        <a href="#indexes">Indexes & Views</a>
+        <a href="#api">API Endpoints</a>
+        <a href="#frontend">Frontend</a>
+        <a href="#live-logging">Live Logging</a>
+        <a href="#setup">Setup & Run</a>
+        <a href="#testing">Testing</a>
+        <a href="#refs">Repository Links</a>
+      </nav>
+
+      <div class="content">
+        <section id="overview" class="card">
+          <h2>Overview</h2>
+          <p>This system models the complete lifecycle of a metro journey: user onboarding, fare lookup, ticket booking with QR codes, smart card management, entry/exit validation, and live activity logs. The design emphasizes data integrity (constraints, triggers), performance (indexes, materialized views), and developer ergonomics (clear APIs, tests, sample data).</p>
+
+          <div class="kpis" style="margin-top:10px">
+            <div class="kpi"><div class="label">Core Tables</div><div class="value">12</div></div>
+            <div class="kpi"><div class="label">Stored Functions</div><div class="value">8+</div></div>
+            <div class="kpi"><div class="label">REST Endpoints</div><div class="value">14+</div></div>
+            <div class="kpi"><div class="label">Automated Tests</div><div class="value">Comprehensive API suite</div></div>
+          </div>
+
+          <h3>Key Entities</h3>
+          <ul class="list">
+            <li><b>User</b>, <b>SmartCard</b>, <b>Station</b>, <b>Line</b>, <b>StationLine</b></li>
+            <li><b>Transaction</b> → specialized into <b>Booking</b> and <b>Recharge</b></li>
+            <li><b>Payment</b>, <b>Ticket</b>, <b>Journey</b>, <b>Fare</b>, <b>Logs</b></li>
+          </ul>
+          <p class="muted" style="margin-top:6px">Normalization: All tables satisfy 3NF; see details in the LaTeX report and schema comments.</p>
+
+          <div class="callout" style="margin-top:10px">
+            Design highlights: clear separation of concerns (Transaction vs Payment), support for both <i>single-use tickets</i> and <i>reusable smart cards</i>, and robust audit logging via the <code>Logs</code> table and generic triggers.
+          </div>
+        </section>
+
+        <section id="schema" class="card">
+          <h2>Database Schema</h2>
+          <p>Defined in <code>database/init/01_schema.sql</code> with PostgreSQL-specific features like custom ENUM types, constraints, and comments. Below is a concise view of the most relevant tables.</p>
+
+          <details open>
+            <summary>Core tables</summary>
+            <table class="table">
+              <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>User</td><td>UserID (PK), Email (UNIQUE)</td><td>Email/phone validation via CHECK; password hash only.</td></tr>
+                <tr><td>SmartCard</td><td>CardID (PK), UserID (FK)</td><td>Nullable UserID (anonymous cards), nonnegative balance.</td></tr>
+                <tr><td>Station</td><td>StationID (PK), StationCode (UNIQUE)</td><td>Operational flag, code format constraint.</td></tr>
+                <tr><td>Line</td><td>LineID (PK), LineName (UNIQUE)</td><td>Color, length, station count.</td></tr>
+                <tr><td>StationLine</td><td>StationLineID (PK)</td><td>Junction with UNIQUE(StationID, LineID) + sequence.</td></tr>
+                <tr><td>Transaction</td><td>TransactionID (PK), UserID (FK)</td><td>Amount > 0, typed via ENUM <code>transaction_type</code>.</td></tr>
+                <tr><td>Booking</td><td>BookingID (PK), TransactionID (UNIQUE)</td><td>Source/Destination (FK), fare checked, stations differ.</td></tr>
+                <tr><td>Recharge</td><td>RechargeID (PK), TransactionID (UNIQUE)</td><td>CardID (FK) with cascade and balance update trigger.</td></tr>
+                <tr><td>Payment</td><td>PaymentID (PK), TransactionID (UNIQUE)</td><td>Method/status tracked; gateway ref optional.</td></tr>
+                <tr><td>Ticket</td><td>TicketID (PK), BookingID (UNIQUE)</td><td>Unique QR, validity window, usage flag/timestamp.</td></tr>
+                <tr><td>Journey</td><td>JourneyID (PK)</td><td>Either Ticket or Card (exclusive), status + timings, fare on exit.</td></tr>
+                <tr><td>Fare</td><td>FareID (PK)</td><td>Matrix with unique route per effective date; positive fare.</td></tr>
+                <tr><td>Logs</td><td>LogID (PK)</td><td>Append-only audit with JSONB <code>OldValues</code>/<code>NewValues</code>.</td></tr>
+              </tbody>
+            </table>
+          </details>
+
+          <h3>Schema excerpt</h3>
+          <div class="codeblock"><pre><code class="language-sql">-- Types
+CREATE TYPE journey_type AS ENUM ('Ticket', 'Card');
+CREATE TYPE journey_status AS ENUM ('Active', 'Completed', 'Cancelled');
+CREATE TYPE transaction_type AS ENUM ('Booking', 'Recharge');
+
+-- Example: Journey
+CREATE TABLE Journey (
+  JourneyID SERIAL PRIMARY KEY,
+  JourneyType journey_type NOT NULL,
+  TicketID INTEGER,
+  CardID INTEGER,
+  EntryStationID INTEGER NOT NULL,
+  EntryTime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ExitStationID INTEGER,
+  ExitTime TIMESTAMP,
+  FareDeducted DECIMAL(10,2),
+  Status journey_status NOT NULL DEFAULT 'Active',
+  CONSTRAINT chk_journey_payment_method CHECK (
+    (JourneyType = 'Ticket' AND TicketID IS NOT NULL AND CardID IS NULL) OR
+    (JourneyType = 'Card' AND CardID IS NOT NULL AND TicketID IS NULL)
+  )
+);</code></pre></div>
+
+          <div class="callout good">Sample data is provided in <code>database/init/04_sample_data.sql</code> (including 50+ stations, lines, fares, users, cards, and sample journeys). Default user passwords in sample data: <b>password123</b>.</div>
+        </section>
+
+        <section id="procedures" class="card">
+          <h2>Stored Procedures, Functions & Triggers</h2>
+          <p>Business logic enforced at the database layer (see <code>database/init/03_triggers.sql</code>):</p>
+          <ul class="list">
+            <li><b>create_ticket_booking(...)</b>: end-to-end ticket creation (Transaction → Booking → Payment → Ticket + QR)</li>
+            <li><b>recharge_smart_card(...)</b>: adds balance (Transaction → Recharge → Payment) with post-insert balance update</li>
+            <li><b>start_journey(...)</b>: validates entry using Ticket or Card (min balance for cards)</li>
+            <li><b>complete_journey(...)</b>: sets exit, calculates fare via <code>get_current_fare</code>, deducts card balance</li>
+            <li><b>get_current_fare(...)</b>: picks active fare by route and date</li>
+            <li><b>get_user_transactions(...)</b>, <b>get_card_journey_history(...)</b>: convenience read APIs</li>
+            <li><b>update_updated_at_column</b> trigger on <code>User</code>; generic <b>log_insert/update/delete</b> triggers populate <code>Logs</code></li>
+          </ul>
+
+          <details>
+            <summary>Trigger example</summary>
+            <div class="codeblock"><pre><code class="language-sql">CREATE OR REPLACE FUNCTION process_card_recharge()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE SmartCard
+  SET Balance = Balance + (SELECT Amount FROM Transaction WHERE TransactionID = NEW.TransactionID),
+      LastUsedAt = CURRENT_TIMESTAMP
+  WHERE CardID = NEW.CardID;
+  RETURN NEW;
+END; $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_recharge_update_balance
+AFTER INSERT ON Recharge
+FOR EACH ROW EXECUTE FUNCTION process_card_recharge();</code></pre></div>
+          </details>
+        </section>
+
+        <section id="indexes" class="card">
+          <h2>Indexes & Materialized Views</h2>
+          <p>Performance strategy is defined in <code>database/init/02_indexes.sql</code> with targeted B-tree indexes and three materialized views for analytics.</p>
+          <ul class="list">
+            <li>Critical: <code>idx_ticket_qr</code> for gate validation; <code>idx_journey_active</code> to list in-progress journeys.</li>
+            <li>History: <code>idx_transaction_user_time</code>, <code>idx_recharge_card_date</code>, <code>idx_booking_date</code>.</li>
+            <li>Search: station code/name, line name, card user, etc.</li>
+          </ul>
+          <h3>Materialized views</h3>
+          <ul class="list">
+            <li><code>mv_popular_routes</code>: top routes by bookings and revenue.</li>
+            <li><code>mv_daily_transaction_summary</code>: daily aggregates by type.</li>
+            <li><code>mv_station_usage</code>: station-wise usage breakdown.</li>
+          </ul>
+          <div class="codeblock"><pre><code class="language-sql">-- Refresh all analytics views
+CREATE OR REPLACE FUNCTION refresh_analytics_views() RETURNS void AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW mv_popular_routes;
+  REFRESH MATERIALIZED VIEW mv_daily_transaction_summary;
+  REFRESH MATERIALIZED VIEW mv_station_usage;
+END; $$ LANGUAGE plpgsql;</code></pre></div>
+        </section>
+
+        <section id="api" class="card">
+          <h2>REST API (Express)</h2>
+          <p>Mounted under <code>/api</code> in <code>backend/src/server.js</code>. Validators and error handling enforce clean contracts. Full plan in <code>api_plan.md</code>.</p>
+
+          <h3>Auth</h3>
+          <ul class="list">
+            <li><code>POST /api/auth/signup</code> — create user</li>
+            <li><code>POST /api/auth/login</code> — JWT login</li>
+            <li><code>GET /api/auth/me</code> — profile (+ linked smart card)</li>
+          </ul>
+
+          <h3>Stations & Fares</h3>
+          <ul class="list">
+            <li><code>GET /api/stations</code> — list stations</li>
+            <li><code>GET /api/stations/fares?fromStationId=&amp;toStationId=</code> — fare lookup</li>
+          </ul>
+
+          <h3>Ticketing</h3>
+          <ul class="list">
+            <li><code>POST /api/tickets/book</code> — book QR ticket (auth)</li>
+            <li><code>GET /api/tickets/history</code> — unified history (auth)</li>
+          </ul>
+
+          <h3>Smart Card</h3>
+          <ul class="list">
+            <li><code>POST /api/cards/register</code> — register card (₹50 fee)</li>
+            <li><code>POST /api/cards/recharge</code> — add balance</li>
+            <li><code>GET /api/cards/balance</code> — current balance</li>
+            <li><code>GET /api/cards</code> — card + recent recharges</li>
+          </ul>
+
+          <h3>Journey Validation (Gate Terminals)</h3>
+          <ul class="list">
+            <li><code>POST /api/journey/entry</code> — permit entry using Ticket or Card</li>
+            <li><code>POST /api/journey/exit</code> — complete journey, calculate fare</li>
+          </ul>
+
+          <h3>Live Logs</h3>
+          <ul class="list">
+            <li><code>WS /api/logs/subscribe?token=</code> — realtime events via WebSocket</li>
+            <li>Dev only: <code>POST /api/test/start-simulator</code> — start event generator</li>
+          </ul>
+
+          <div class="callout warn">Admin routes (<code>/api/admin/*</code>) are planned in <code>api_plan.md</code> and noted as “TO IMPLEMENT”.</div>
+        </section>
+
+        <section id="frontend" class="card">
+          <h2>Frontend (React + Vite)</h2>
+          <p>Modern single-page app with authentication, booking, card management, history, and scanner UIs.</p>
+          <ul class="list">
+            <li><code>Dashboard.tsx</code> — user overview, balance, quick actions</li>
+            <li><code>BookTicket.tsx</code> — select stations, calculate fare, QR ticket</li>
+            <li><code>SmartCard.tsx</code> — register, recharge, QR for card</li>
+            <li><code>History.tsx</code> — combined journey history</li>
+            <li><code>EntryScanner.tsx</code> / <code>ExitScanner.tsx</code> — QR scanning and manual entry</li>
+            <li><code>LiveLogs.tsx</code> — real-time activity via WebSocket</li>
+            <li><code>Login.tsx</code> / <code>Signup.tsx</code> — auth screens</li>
+          </ul>
+        </section>
+
+        <section id="live-logging" class="card">
+          <h2>Live Logging</h2>
+          <p>Backend pushes event payloads whenever key actions occur (new user, booking, recharge, entry, exit). See <code>backend/src/utils/eventEmitter.js</code> and <code>backend/src/utils/websocket.js</code>.</p>
+          <div class="codeblock"><pre><code class="language-json">{ "event": "TICKET_BOOKED", "timestamp": "...", "data": { "ticketId": 123, "userId": 5, "from": "...", "to": "...", "fare": 50.00 } }</code></pre></div>
+        </section>
+
+        <section id="setup" class="card">
+          <h2>Setup & Run</h2>
+          <p>Use Docker Compose for a clean local run on Windows. It will initialize PostgreSQL with schema, indexes, triggers, and sample data automatically.</p>
+          <div class="codeblock"><pre><code class="language-powershell"># From repository root
+docker compose up --build
+
+# Backend API: http://localhost:3000
+# Health:       http://localhost:3000/health
+# WebSocket:    ws://localhost:3000/api/logs/subscribe?token=&lt;jwt&gt;</code></pre></div>
+
+          <h3>Environment</h3>
+          <ul class="list">
+            <li>DB user: <code>metro_admin</code>, DB name: <code>delhi_metro_system</code></li>
+            <li>Default JWT/CORS configured in <code>docker-compose.yml</code></li>
+          </ul>
+
+          <details>
+            <summary>Run backend without Docker</summary>
+            <div class="codeblock"><pre><code class="language-powershell"># In backend/
+npm install
+$env:DB_HOST="localhost"; $env:DB_USER="metro_admin"; $env:DB_PASSWORD="metro_secure_pass"; $env:DB_NAME="delhi_metro_system"; $env:PORT="3000"; $env:JWT_SECRET="dev_secret"; $env:CORS_ORIGIN="*"
+npm start</code></pre></div>
+          </details>
+
+          <div class="callout">Sample users (from SQL seed) use password: <b>password123</b>.</div>
+        </section>
+
+        <section id="testing" class="card">
+          <h2>Testing</h2>
+          <p>Backend includes a comprehensive Jest + Supertest suite that covers auth, stations/fares, ticketing, cards, journey validation, health, and error handling.</p>
+          <div class="codeblock"><pre><code class="language-powershell"># In backend/
+npm install
+npm test</code></pre></div>
+          <p class="muted">See <code>backend/tests/api.test.js</code> for full scenarios and cleanup strategy.</p>
+        </section>
+
+        <section id="refs" class="card">
+          <h2>Repository Links</h2>
+          <p class="repo-links">
+            <a class="pill" href="https://github.com/Prit44421/delhi-metro-ticket-booking-system" target="_blank" rel="noopener">🔗 GitHub Repository</a>
+            <a class="pill" href="https://github.com/Prit44421/delhi-metro-ticket-booking-system/blob/main/database/init/01_schema.sql" target="_blank" rel="noopener">📄 Schema SQL</a>
+            <a class="pill" href="https://github.com/Prit44421/delhi-metro-ticket-booking-system/blob/main/database/init/02_indexes.sql" target="_blank" rel="noopener">⚡ Indexes & Views</a>
+            <a class="pill" href="https://github.com/Prit44421/delhi-metro-ticket-booking-system/blob/main/database/init/03_triggers.sql" target="_blank" rel="noopener">🧩 Triggers & Procedures</a>
+            <a class="pill" href="https://github.com/Prit44421/delhi-metro-ticket-booking-system/blob/main/database/init/04_sample_data.sql" target="_blank" rel="noopener">🧪 Sample Data</a>
+            <a class="pill" href="https://github.com/Prit44421/delhi-metro-ticket-booking-system/blob/main/api_plan.md" target="_blank" rel="noopener">🛣️ API Plan</a>
+            <a class="pill" href="https://github.com/Prit44421/delhi-metro-ticket-booking-system/blob/main/report.tex" target="_blank" rel="noopener">📘 LaTeX Report</a>
+          </p>
+          <p class="muted">If you have an ERD image (e.g., <code>er.png</code>), place it in the repo root and link it here for visual reference.</p>
+        </section>
+
+        <div class="footer">
+          Built with ❤️ by Group 4. This page is static and ready for GitHub Pages. For questions or improvements, please open an issue in the repository.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
